@@ -502,7 +502,15 @@ def metrics(y, dt, use_event=True, detrend=True, window="hann", zero_rows=None):
         "f999_Hz": power_quantile_freq(f, P, 0.999),
         "flags": ",".join(flags) if flags else "ok",
     }
-    out.update({k: v for k, v in zc.items() if k != "flags"})
+    # CSVに同内容の列が並ばないよう、zc の重複キーは取り込まない。
+    #   "noise_sigma"        … 上の "noise_sigma_MPa" と同じ値
+    #   "zero_offset_robust" … 上の "baseline_MPa" と同じ値
+    #                          （どちらも robust_baseline(y) の戻り値）
+    #   "flags"              … 既に out に取り込み済み
+    # ゼロ点合わせ窓の汚染量は |zero_offset - baseline_MPa| で復元でき、
+    # 判定結果自体は flags の zero_window_offset に残るので情報は失われない。
+    _skip = ("flags", "noise_sigma", "zero_offset_robust")
+    out.update({k: v for k, v in zc.items() if k not in _skip})
     return out, (f, P), (i0, i1)
 
 

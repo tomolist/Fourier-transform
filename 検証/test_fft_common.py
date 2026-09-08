@@ -185,8 +185,34 @@ def test_robust_sigma():
 
 
 # ==========================================================
+def test_no_duplicate_columns():
+    print("\n[7] metrics に重複列がないこと（CSVの列が二重にならない）")
+    for path in (FUTABA, NR500):
+        df, dt, info = read_any(path)
+        ch = df.columns[0]
+        m, _, _ = metrics(df[ch].to_numpy(), dt,
+                          zero_rows=ZERO_ADJUST_ROWS if info["zero_applied"] else None)
+        keys = list(m)
+        check(f"{info['format']}: 列名の重複なし（{len(keys)}列）",
+              len(keys) == len(set(keys)))
+
+        # 名前が違っても中身が常に同じ列がないかを値で確認する
+        same = []
+        for i, a in enumerate(keys):
+            for b in keys[i + 1:]:
+                va, vb = m[a], m[b]
+                if (isinstance(va, (int, float)) and isinstance(vb, (int, float))
+                        and not isinstance(va, bool) and not isinstance(vb, bool)
+                        and np.isfinite(va) and np.isfinite(vb)
+                        and va == vb and va != 0):
+                    same.append(f"{a}=={b}")
+        check(f"{info['format']}: 同じ値を持つ列の組がない",
+              not same, f"({', '.join(same)})" if same else "")
+
+
+# ==========================================================
 def test_readonly():
-    print("\n[7] 加工対象ファイルを書き換えないこと")
+    print("\n[8] 加工対象ファイルを書き換えないこと")
     before = {}
     for fn in sorted(os.listdir(SAMPLE)):
         with open(os.path.join(SAMPLE, fn), "rb") as f:
@@ -210,6 +236,7 @@ if __name__ == "__main__":
     test_zero_adjust()
     test_waveform_variation()
     test_robust_sigma()
+    test_no_duplicate_columns()
     test_readonly()
     print("\n" + "=" * 60)
     if _fails:
