@@ -16,3 +16,6 @@ wheels/
 .DS_Store
 Thumbs.db
 
+# 動作確認用の一時ファイル
+_tmp/
+
